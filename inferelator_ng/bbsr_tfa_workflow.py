@@ -8,7 +8,7 @@ from . import workflow
 import design_response_translation #added python design_response
 from tfa import TFA
 from results_processor import ResultsProcessor
-import mi_R
+import mi
 import bbsr_python
 import datetime
 from kvsstcp.kvsclient import KVSClient
@@ -30,7 +30,7 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
         """
         np.random.seed(self.random_seed)
 
-        self.mi_clr_driver = mi_R.MIDriver()
+        self.mi_clr_driver = mi.MIDriver()
         self.regression_driver = bbsr_python.BBSR_runner()
         self.design_response_driver = design_response_translation.PythonDRDriver() #this is the python switch
         self.get_data()

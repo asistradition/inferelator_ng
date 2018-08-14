@@ -1,7 +1,7 @@
 import unittest, os
 import pandas as pd
 import numpy as np
-from .. import mi_R
+from .. import mi
 
 my_dir = os.path.dirname(__file__)
 
@@ -12,7 +12,7 @@ class TestMI(unittest.TestCase):
     cores = bins = 10
 
     def calculate_mi(self):
-        driver = mi_R.MIDriver()
+        driver = mi.MIDriver()
         target = driver.target_directory = os.path.join(my_dir, "artifacts")
         if not os.path.exists(target):
             os.makedirs(target)
