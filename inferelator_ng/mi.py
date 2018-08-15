@@ -94,16 +94,23 @@ def mutual_information(X, Y, bins, cores=1, logtype=DEFAULT_LOG_TYPE):
 
     # Run _calc_mi on every pairwise combination of features using Pool to multiprocess
     else:
+        # Create child processes
         mp_pool = multiprocessing.Pool(processes=cores)
+        try:
+            for mi_data in mp_pool.imap(_mi_mp_1d, _mi_gen(X, Y, bins, logtype=logtype), chunksize=POOL_CHUNKSIZE):
+                i, j, mi_val = mi_data
+                mi[i, j] = mi_val
+        except KeyboardInterrupt:
+            # In theory this should SIGTERM all the children and then clean them up before reraising the interrupt
+            # In practice it'll probably just hang
+            mp_pool.terminate()
+            mp_pool.join()
+            raise
 
-        if POOL_CHUNKSIZE is None:
-            pool_chunksize = int(X.shape[1] * Y.shape[1] / cores / 2)
-        else:
-            pool_chunksize = POOL_CHUNKSIZE
-
-        for mi_data in mp_pool.imap(_mi_mp_1d, _mi_gen(X, Y, bins, logtype=logtype), chunksize=pool_chunksize):
-            i, j, mi_val = mi_data
-            mi[i, j] = mi_val
+        # Clean up the remaining child processes
+        # This should happen on return but why take the chance
+        mp_pool.close()
+        mp_pool.join()
 
     mi_p = pd.DataFrame(mi, index=mi_r, columns=mi_c)
     return mi_p
@@ -111,14 +118,14 @@ def mutual_information(X, Y, bins, cores=1, logtype=DEFAULT_LOG_TYPE):
 
 def calc_mixed_clr(mi, mi_bg):
     """
-    Calculate the context liklihood of relatedness from
+    Calculate the context likelihood of relatedness from the dynatmic data mi and a static background mi
 
     :param mi: pd.DataFrame
         Mutual information dataframe
     :param mi_bg: pd.DataFrame
         Background mutual information dataframe
     :return clr: pd.DataFrame
-        Context liklihood of relateness dataframe
+        Context likelihood of relatedness dataframe
     """
     # Calculate the zscore for columns
     z_col = mi.copy().round(8)
