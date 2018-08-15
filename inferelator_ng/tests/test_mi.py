@@ -19,6 +19,8 @@ class TestMI(unittest.TestCase):
         driver.cores = self.cores
         driver.bins = self.bins
         (self.clr_matrix, self.mi_matrix) = driver.run(self.x_dataframe, self.y_dataframe)
+        driver.cores = 1
+        (self.clr_matrix, self.mi_matrix) = driver.run(self.x_dataframe, self.y_dataframe)
 
     def print_results(self):
         print("\nx")
