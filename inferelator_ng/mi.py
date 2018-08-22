@@ -94,8 +94,11 @@ def mutual_information(X, Y, bins, cores=1, logtype=DEFAULT_LOG_TYPE):
 
     # Run _calc_mi on every pairwise combination of features using Pool to multiprocess
     else:
-        mp_pool = multiprocessing.Pool(processes=cores)
-
+        try:
+            mp_pool = multiprocessing.Pool(processes=cores, context='spawn')
+        except TypeError:
+            mp_pool = multiprocessing.Pool(processes=cores)
+            
         if POOL_CHUNKSIZE is None:
             pool_chunksize = int(X.shape[1] * Y.shape[1] / cores / 2)
         else:
