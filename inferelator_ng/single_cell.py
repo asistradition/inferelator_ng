@@ -102,23 +102,7 @@ def ss_normalization(data, logfunc=DEFAULT_log_transform):
 def _find_optimal_cluster_cut(dist, max_cluster_ratio, max_group_size, group_size_threshold, group_step):
     links = linkage(dist, method=DEFAULT_method)
     utils.Debug.vprint("Hierarchial clustering complete: Linkage map constructed")
-
-    ctree = cut_tree(links)
-    utils.Debug.vprint("Hierarchial clustering complete: Cut tree constructed")
-
-    start_pos = int(DEFAULT_start_position * ctree.shape[0])
-    while group_size_threshold < max_group_size:
-        for i in list(range(start_pos))[::-1]:
-            cslice = ctree[:, i]
-            try:
-                if _isvalid_cut(cslice, max_cluster_ratio, group_size_threshold):
-                    utils.Debug.vprint("{nc} clusters, {ma} maximum".format(nc=_num_clusters(cslice),
-                                                                            ma=_max_cluster_size(cslice)))
-                    return cslice
-            except TooManyClusters:
-                break
-        group_size_threshold = group_size_threshold * group_step
-    raise NoSuitableCutError
+    return cut_tree(links, height=1).flatten()
 
 
 def _bulk_up_clusters(data, clust_idx):

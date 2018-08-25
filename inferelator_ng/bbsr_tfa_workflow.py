@@ -56,7 +56,7 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
         """
         Compute Transcription Factor Activity
         """
-        print('Computing Transcription Factor Activity ... ')
+        utils.Debug.vprint('Computing Transcription Factor Activity ... ', level=0)
         TFA_calculator = TFA(self.priors_data, self.design, self.half_tau_response)
         self.design = TFA_calculator.compute_transcription_factor_activity()
         self.half_tau_response = None
@@ -81,6 +81,6 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
         """
         self.filter_expression_and_priors()
         drd = design_response_translation.PythonDRDriver()
-        print('Creating design and response matrix ... ')
+        utils.Debug.vprint('Creating design and response matrix ... ', level=0)
         drd.delTmin, drd.delTmax, drd.tau, drd.return_half_tau = self.delTmin, self.delTmax, self.tau, True
         self.design, self.response, self.half_tau_response = drd.run(self.expression_matrix, self.meta_data)
