@@ -23,6 +23,53 @@ def slurm_envs():
         envs[cv] = val
     return envs
 
+class Debug:
+    verbose_level = 0
+    default_level = 1
+
+    silence_clients = True
+    rank = slurm_envs()['rank']
+
+    levels = dict(silent=-1,
+                  normal=0,
+                  verbose=1, v=1,
+                  very_verbose=2, vv=2,
+                  max_output=3, vvv=3)
+
+    @classmethod
+    def set_verbose_level(cls, lvl):
+        if isinstance(lvl, (int, float)):
+            cls.verbose_level = lvl
+
+    @classmethod
+    def vprint(cls, *args, **kwargs):
+        if cls.silence_clients and cls.rank != 0:
+            return
+        cls.print_level(*args, **kwargs)
+
+    @classmethod
+    def warn(cls, *args, **kwargs):
+        cls.vprint(*args, level=cls.levels["v"], **kwargs)
+
+    @classmethod
+    def notify(cls, *args, **kwargs):
+        cls.vprint(*args, level=cls.levels["vv"], **kwargs)
+
+    @classmethod
+    def vprint_all(cls, *args, **kwargs):
+        cls.print_level(*args, **kwargs)
+
+    @classmethod
+    def print_level(cls, *args, **kwargs):
+        try:
+            level = kwargs.pop('level')
+        except KeyError:
+            level = cls.default_level
+        if level <= cls.verbose_level:
+            print((" " * level), *args, **kwargs)
+        else:
+            return
+
 
 def ownCheck(kvs, rank, chunk=1, kvs_key='count'):
     """
