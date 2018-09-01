@@ -14,6 +14,8 @@ from inferelator_ng import utils
 # The variable names that get set in the main workflow, but need to get copied to the Regression Worker children
 SHARED_CLASS_VARIABLES = ['delTmin', 'delTmax', 'reduce_searchspace', 'rank', 'input_dir', 'output_dir']
 
+# Column names for pandas
+GC, CC, TAU, AUPR, SEED, GENE, HALFLIFE = 'GC', 'CC', 'Tau', 'Aupr', 'Seed', 'Gene', 'Halflife'
 
 class PythonDRDriver_with_tau_vector(PythonDRDriver):
     """ 
@@ -137,7 +139,7 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
 
         # Run the regression using taus generated from each of the separate condition clusters
         for i in range(len(self.expr_clust_files)):
-            taus = self.map_tau_to_genes(data, i)['Tau']
+            taus = self.map_tau_to_genes(data, i)[TAU]
             regd = self.create_regression_driver(1, taus, driver=InfereCLaDR_TauVector_Workflow)
             self.assign_class_vars(regd)
             regd.append_to_path('output_dir', str(i))
@@ -212,24 +214,24 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
         return aupr
 
     def load_gene_clusters(self):
-        data = pd.DataFrame(columns=['Cluster', 'Gene'])
+        data = pd.DataFrame(columns=[GC, GENE])
         for i, f in enumerate(self.gene_clust_files):
             genes = pd.read_table(self.input_file(f), sep="\t", header=None)
             assert genes.shape[1] == 1
-            genes.columns = ['Gene']
-            genes.index = map(str, genes['Gene'].tolist())
-            genes['GC'] = i
+            genes.columns = [GENE]
+            genes.index = map(str, genes[GENE].tolist())
+            genes[GC] = i
             data = pd.concat((data, genes), axis=0)
         self.gene_cluster_data = data
 
     def gene_cluster_gen(self):
         for i in range(len(self.gene_clust_files)):
-            data = self.gene_cluster_data[self.gene_cluster_data['GC'] == i]
-            yield data['Gene'].tolist()
+            data = self.gene_cluster_data[self.gene_cluster_data[GC] == i]
+            yield data[GENE].tolist()
 
     def map_tau_to_genes(self, tau_data, cc):
-        tau_data = tau_data[tau_data['CC'] == cc]
-        return self.gene_cluster_data.join(tau_data[['GC', 'Tau']], on='GC')
+        tau_data = tau_data[tau_data[CC] == cc]
+        return self.gene_cluster_data.join(tau_data[[GC, TAU]], on=GC)
 
     def write_df(self, df):
         if self.output_dir is None:
@@ -242,19 +244,19 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
 
     @staticmethod
     def process_aupr_search(data):
-        data = pd.DataFrame(data, columns=['CC', 'GC', 'Tau', 'Seed', 'AUPR'])
+        data = pd.DataFrame(data, columns=[CC, GC, TAU, SEED, AUPR])
 
         # For every CC, GC, and Seed combination, keep the row with the highest AUPR
-        group = ['CC', 'GC', 'Seed']
-        reidx = data.groupby(group)['AUPR'].transform(max) == data['AUPR']
+        group = [CC, GC, SEED]
+        reidx = data.groupby(group)[AUPR].transform(max) == data[AUPR]
         data = data[reidx]
         data = data[~data.duplicated(subset=group)]
 
         # For every CC & GC, keep the row with the median AUPR
-        group = ['CC', 'GC']
-        reidx = data.groupby(group)['AUPR'].transform('median') == data['AUPR']
+        group = [CC, GC]
+        reidx = data.groupby(group)[AUPR].transform('median') == data[AUPR]
         data = data[reidx]
         data = data[~data.duplicated(subset=group)]
 
-        data['HalfLife'] = data['Tau'] * np.log(2)
+        data[HALFLIFE] = data[TAU] * np.log(2)
         return data
