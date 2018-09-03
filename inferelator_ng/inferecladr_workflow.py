@@ -37,10 +37,11 @@ class InfereCLaDR_Regression_Workflow(bbsr_tfa_workflow.BBSR_TFA_Workflow):
 
     reduce_searchspace = False
 
-    def __init__(self, kvs, rank, expr_data, prior_data, gs_data, tf_names):
+    def __init__(self, kvs, rank, expr_data, meta_data, prior_data, gs_data, tf_names):
         self.kvs = kvs
         self.rank = rank
         self.expression_matrix = expr_data
+        self.meta_data = meta_data
         self.priors_data = prior_data
         self.gold_standard = gs_data
         self.tf_names = tf_names
@@ -188,7 +189,8 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
         return data
 
     def create_regression_driver(self, s, t, driver=InfereCLaDR_Regression_Workflow):
-        regd = driver(self.kvs, self.rank, self.expression_matrix, self.priors_data, self.gold_standard, self.tf_names)
+        regd = driver(self.kvs, self.rank, self.expression_matrix, self.meta_data, self.priors_data,
+                      self.gold_standard, self.tf_names)
         self.assign_class_vars(regd)
         regd.random_seed, regd.tau = s, t
         return regd
