@@ -128,8 +128,8 @@ class PythonDRDriver:
         des_mat.columns=cols_des_mat
         res_mat.columns=cols_res_mat
 
-        utils.Debug.vprint("Design {des} response {res} construction complete".format(des=des_mat,
-                                                                                      res=res_mat))
+        utils.Debug.vprint("Design {des} response {res} construction complete".format(des=des_mat.shape,
+                                                                                      res=res_mat.shape))
         return (des_mat, res_mat)
 
     #implement the response variable formula for the current condition
