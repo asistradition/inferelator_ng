@@ -167,6 +167,9 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
     def load_cluster_data(self, idx):
         self.expression_matrix = self.input_dataframe(self.expr_clust_files[idx])
         self.meta_data = self.input_dataframe(self.meta_clust_files[idx], has_index=False)
+        utils.Debug.vprint("Loaded {i} expression {expr} and metadata {meta}".format(i=idx,
+                                                                                     expr=self.expression_matrix.shape,
+                                                                                     meta=self.meta_data.shape))
 
     def search_tau_space(self):
         data = []
