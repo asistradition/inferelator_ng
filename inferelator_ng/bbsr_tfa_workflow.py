@@ -68,7 +68,7 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
         (clr_matrix, mi_matrix) = mi.MIDriver(kvs=self.kvs, rank=self.rank).run(X, Y)
         utils.Debug.vprint('MI {mi} & CLR {clr} Calculations Complete'.format(mi=mi_matrix.shape,
                                                                               clr=clr_matrix.shape),
-                           level=1)
+                           level=2)
         utils.Debug.vprint('Calculating betas using BBSR', level=0)
         ownCheck = utils.ownCheck(self.kvs, self.rank, chunk=25)
         return bbsr_python.BBSR_runner().run(X, Y, clr_matrix, self.priors_data, self.kvs, self.rank, ownCheck)
@@ -81,7 +81,7 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
         TFA_calculator = TFA(self.priors_data, self.design, self.half_tau_response)
         self.design = TFA_calculator.compute_transcription_factor_activity()
         self.half_tau_response = None
-        utils.Debug.vprint("Activity {act} calculations complete".format(act=self.design.shape))
+        utils.Debug.vprint("Activity {act} calculations complete".format(act=self.design.shape), level=2)
 
     def emit_results(self, betas, rescaled_betas, gold_standard, priors):
         """
@@ -110,4 +110,5 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
         self.design, self.half_tau_response = drd.run(self.expression_matrix, self.meta_data)
         self.expression_matrix = None
         utils.Debug.vprint("Design {des} response {res} construction complete".format(des=self.design.shape,
-                                                                                      res=self.response.shape))
+                                                                                      res=self.response.shape),
+                           level=2)
