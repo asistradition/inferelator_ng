@@ -12,7 +12,8 @@ from inferelator_ng.prior_gs_split_workflow import ResultsProcessorForGoldStanda
 from inferelator_ng import utils
 
 # The variable names that get set in the main workflow, but need to get copied to the Regression Worker children
-SHARED_CLASS_VARIABLES = ['delTmin', 'delTmax', 'reduce_searchspace', 'rank', 'input_dir', 'output_dir']
+SHARED_CLASS_VARIABLES = ['delTmin', 'delTmax', 'reduce_searchspace', 'rank', 'input_dir', 'output_dir',
+                          'num_bootstraps']
 
 # Column names for pandas
 GC, CC, TAU, AUPR, SEED, GENE, HALFLIFE = 'GC', 'CC', 'Tau', 'Aupr', 'Seed', 'Gene', 'Halflife'
@@ -201,7 +202,10 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
 
     def assign_class_vars(self, obj):
         for varname in SHARED_CLASS_VARIABLES:
-            setattr(obj, varname, getattr(self, varname))
+            try:
+                setattr(obj, varname, getattr(self, varname))
+            except AttributeError:
+                utils.Debug.vprint("Variable {var} not assigned to parent".format(var=varname))
 
     def process_results(self, betas, resc_betas, gs_data, prior_data):
         rp = ResultsProcessorForGoldStandardSplit(betas, resc_betas)
