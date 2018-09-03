@@ -78,6 +78,8 @@ class InfereCLaDR_Puppet_Workflow(PriorGoldStandardSplitWorkflowBase, InfereCLaD
         self.set_gold_standard_and_priors()
         self.compute_common_data()
         self.compute_activity()
+        utils.Debug.vprint("Design: {des}\tResponse: {res}".format(des=self.design.shape, res=self.response.shape))
+        utils.Debug.vprint("Priors: {pr}\tGS: {gs}".format(pr=self.priors_data.shape, gs=self.gold_standard.shape))
 
 
 class TauVector_Workflow:
@@ -167,9 +169,8 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
     def load_cluster_data(self, idx):
         self.expression_matrix = self.input_dataframe(self.expr_clust_files[idx])
         self.meta_data = self.input_dataframe(self.meta_clust_files[idx], has_index=False)
-        utils.Debug.vprint("Loaded {i} expression {expr} and metadata {meta}".format(i=idx,
-                                                                                     expr=self.expression_matrix.shape,
-                                                                                     meta=self.meta_data.shape))
+        utils.Debug.vprint("Loaded expression {expr} and metadata {meta}".format(expr=self.expression_matrix.shape,
+                                                                                 meta=self.meta_data.shape))
 
     def search_tau_space(self):
         data = []
