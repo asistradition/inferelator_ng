@@ -78,6 +78,7 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
         TFA_calculator = TFA(self.priors_data, self.design, self.half_tau_response)
         self.design = TFA_calculator.compute_transcription_factor_activity()
         self.half_tau_response = None
+        utils.Debug.vprint("Activity {act} calculations complete".format(act=self.design.shape))
 
     def emit_results(self, betas, rescaled_betas, gold_standard, priors):
         """
