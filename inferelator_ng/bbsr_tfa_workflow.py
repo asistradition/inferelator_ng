@@ -64,6 +64,7 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
     def run_bootstrap(self, bootstrap):
         X = self.design.iloc[:, bootstrap]
         Y = self.response.iloc[:, bootstrap]
+        utils.Debug.vprint('Bootstrap design {des} and response {res} selected'.format(des=X.shape, res=Y.shape))
         utils.Debug.vprint('Calculating MI, Background MI, and CLR Matrix', level=0)
         (clr_matrix, mi_matrix) = mi.MIDriver(kvs=self.kvs, rank=self.rank).run(X, Y)
         utils.Debug.vprint('MI {mi} & CLR {clr} Calculations Complete'.format(mi=mi_matrix.shape,
@@ -109,3 +110,5 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
         drd.tau = self.tau / 2
         self.design, self.half_tau_response = drd.run(self.expression_matrix, self.meta_data)
         self.expression_matrix = None
+        utils.Debug.vprint("Design {des} response {res} construction complete".format(des=self.design.shape,
+                                                                                      res=self.response.shape))
