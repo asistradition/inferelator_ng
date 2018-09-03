@@ -4,10 +4,9 @@ Workflow class that splits the prior into a gold standard and new prior
 
 import pandas as pd
 import numpy as np
-from inferelator_ng import workflow
 from inferelator_ng import results_processor
 
-class PriorGoldStandardSplitWorkflowBase(workflow.WorkflowBase):
+class PriorGoldStandardSplit:
 
     def set_gold_standard_and_priors(self, gold_standard_split=0.5):
         """

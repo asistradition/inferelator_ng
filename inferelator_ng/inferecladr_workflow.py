@@ -7,7 +7,7 @@ import datetime
 from inferelator_ng import bbsr_tfa_workflow
 from inferelator_ng import workflow
 from inferelator_ng.design_response_translation import PythonDRDriver
-from inferelator_ng.prior_gs_split_workflow import PriorGoldStandardSplitWorkflowBase
+from inferelator_ng.prior_gs_split_workflow import PriorGoldStandardSplit
 from inferelator_ng.prior_gs_split_workflow import ResultsProcessorForGoldStandardSplit
 from inferelator_ng import utils
 
@@ -59,7 +59,7 @@ class InfereCLaDR_Regression_Workflow(bbsr_tfa_workflow.BBSR_TFA_Workflow):
             self.priors_data = self.priors_data.loc[genes_reduced, :]
 
 
-class InfereCLaDR_Puppet_Workflow(PriorGoldStandardSplitWorkflowBase, InfereCLaDR_Regression_Workflow):
+class InfereCLaDR_Puppet_Workflow(PriorGoldStandardSplit, InfereCLaDR_Regression_Workflow):
     """
     Standard BBSR TFA Workflow except it takes all the data as references to __init__ instead of as filenames on disk or
     as environment variables. When run it generates betas and resc_betas, but then returns them instead of processing
