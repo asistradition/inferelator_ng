@@ -128,6 +128,8 @@ class PythonDRDriver:
         des_mat.columns=cols_des_mat
         res_mat.columns=cols_res_mat
 
+        return (des_mat, res_mat)
+
     #implement the response variable formula for the current condition
     def compute_response_variable(self, tau, following_delta, expr_current_condition, expr_following_condition):
         return (float(tau)/float(following_delta)) * (expr_following_condition.astype('float64') - expr_current_condition.astype('float64')) + expr_current_condition.astype('float64')
