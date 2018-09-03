@@ -66,6 +66,9 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
         Y = self.response.iloc[:, bootstrap]
         utils.Debug.vprint('Calculating MI, Background MI, and CLR Matrix', level=0)
         (clr_matrix, mi_matrix) = mi.MIDriver(kvs=self.kvs, rank=self.rank).run(X, Y)
+        utils.Debug.vprint('MI {mi} & CLR {clr} Calculations Complete'.format(mi=mi_matrix.shape,
+                                                                              clr=clr_matrix.shape),
+                           level=1)
         utils.Debug.vprint('Calculating betas using BBSR', level=0)
         ownCheck = utils.ownCheck(self.kvs, self.rank, chunk=25)
         return bbsr_python.BBSR_runner().run(X, Y, clr_matrix, self.priors_data, self.kvs, self.rank, ownCheck)
