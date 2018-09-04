@@ -241,7 +241,7 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
 
     def map_tau_to_genes(self, tau_data, cc):
         tau_data = tau_data[tau_data[CC] == cc]
-        return self.gene_cluster_data.join(tau_data[[GC, TAU]], on=GC)
+        return self.gene_cluster_data.merge(tau_data[[GC, TAU]], on=GC)
 
     def write_df(self, df):
         if self.output_dir is None:
