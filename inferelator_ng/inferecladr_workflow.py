@@ -26,7 +26,7 @@ class PythonDRDriver_with_tau_vector(PythonDRDriver):
 
     # define your own compute_response_variable:
     def compute_response_variable(self, tau, delta_follow, expr_current, expr_follow):
-        tvec = tau.iloc[:, 0] / float(delta_follow)
+        tvec = tau.values.astype(float) / float(delta_follow)
         return tvec * (expr_follow.astype('float64') - expr_current.astype('float64')) + expr_current.astype('float64')
 
 
