@@ -10,6 +10,7 @@ from inferelator_ng import utils
 import numpy as np
 import os
 import pandas as pd
+import datetime
 
 
 class WorkflowBase(object):
@@ -140,6 +141,13 @@ class WorkflowBase(object):
         elif not strict:
             return None
         raise ValueError("no such file " + repr(path))
+
+    def output_file(self, filename):
+        if self.output_dir is None:
+            self.output_dir = os.path.join(self.input_dir, datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+        return os.path.join(self.output_dir, filename)
 
     def input_dataframe(self, filename, strict=True, has_index=True):
         f = self.input_file(filename, strict)

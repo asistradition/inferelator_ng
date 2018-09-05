@@ -76,24 +76,30 @@ class InfereCLaDR_Puppet_Workflow(PriorGoldStandardSplit, InfereCLaDR_Regression
         pass
 
     def startup_run(self):
-        self.set_gold_standard_and_priors()
+        #self.set_gold_standard_and_priors()
         self.compute_common_data()
         self.compute_activity()
-        utils.Debug.vprint("Design: {des}\tResponse: {res}".format(des=self.design.shape, res=self.response.shape))
-        utils.Debug.vprint("Priors: {pr}\tGS: {gs}".format(pr=self.priors_data.shape, gs=self.gold_standard.shape))
 
 
 class TauVector_Workflow:
+    """
+    Overrides compute_common_data so the design response driver will work with a vector tau
+    """
 
     def compute_common_data(self):
         self.filter_expression_and_priors()
+        self.filter_expression_and_taus()
         drd = PythonDRDriver_with_tau_vector()
         utils.Debug.vprint('Creating design and response matrix ... ')
         drd.delTmin, drd.delTmax, drd.tau = self.delTmin, self.delTmax, self.tau
         self.design, self.response = drd.run(self.expression_matrix, self.meta_data)
-        drd.tau = self.tau / 2
+        drd.tau = self.tau / float(2)
         self.design, self.half_tau_response = drd.run(self.expression_matrix, self.meta_data)
         self.expression_matrix = None
+
+    def filter_expression_and_taus(self):
+        overlap_idx = self.expression_matrix.index.intersection(self.tau.index)
+        self.tau = self.tau[overlap_idx]
 
 
 class InfereCLaDR_TauVector_Workflow(TauVector_Workflow, InfereCLaDR_Regression_Workflow):
@@ -140,10 +146,11 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
         # Load the main (non-clustered) data
         self.read_expression()
         self.read_metadata()
+        self.gene_cluster_data = self.read_gene_clusters([self.full_gene_clust_mapping_file])
 
         # Run the regression using taus generated from each of the separate condition clusters
         for i in range(len(self.expr_clust_files)):
-            taus = self.map_tau_to_genes(data, i)[TAU]
+            taus = self.map_tau_to_genes(data, i)[TAU] # Merge the tau information into the gene cluster list
             regd = self.create_regression_driver(1, taus, driver=InfereCLaDR_TauVector_Workflow)
             self.assign_class_vars(regd)
             regd.append_to_path('output_dir', str(i))
@@ -152,28 +159,35 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
     def startup_run(self):
         self.read_tfs()
         self.set_gold_standard_and_priors()
-        self.load_gene_clusters()
+        self.gene_cluster_data = self.read_gene_clusters(self.gene_clust_files)
 
     def startup_finish(self):
         pass
 
     def search_clusters(self):
+        """
+        Load condition cluster data for regression and run the tau search
+        """
         cluster_data = []
-        for i in range(len(self.expr_clust_files)):
-            utils.Debug.vprint("Regressing on cluster {i} of {t}".format(i=i + 1, t=len(self.expr_clust_files)),
-                               level=0)
+        n_clusters = len(self.expr_clust_files)
+        for i in range(n_clusters):
+            utils.Debug.vprint("Regressing on cluster {i} of {t}".format(i=i + 1, t=n_clusters), level=0)
             self.load_cluster_data(i)
-            self.cluster_idx = i
             cluster_data.extend(self.search_tau_space())
         return cluster_data
 
     def load_cluster_data(self, idx):
+        """
+        Load condition cluster expression and metadata
+        """
         self.expression_matrix = self.input_dataframe(self.expr_clust_files[idx])
         self.meta_data = self.input_dataframe(self.meta_clust_files[idx], has_index=False)
-        utils.Debug.vprint("Loaded expression {expr} and metadata {meta}".format(expr=self.expression_matrix.shape,
-                                                                                 meta=self.meta_data.shape))
+        self.cluster_idx = idx
 
     def search_tau_space(self):
+        """
+        Regress on each tau and seed combination
+        """
         data = []
         tots = len(self.seeds) * len(self.taus)
         for i, (s, t) in enumerate(itertools.product(self.seeds, self.taus)):
@@ -183,6 +197,9 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
         return data
 
     def run_st_regression(self, s, t):
+        """
+        Run the regression driver on a specific seed and tau. Process the data and return it as a list of tuples
+        """
         regd = self.create_regression_driver(s, t, driver=InfereCLaDR_Puppet_Workflow)
         betas, resc_betas = regd.run()
         data = []
@@ -193,7 +210,10 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
                 data.append((self.cluster_idx, g, t, s, a))
         return data
 
-    def create_regression_driver(self, s, t, driver=InfereCLaDR_Regression_Workflow):
+    def create_regression_driver(self, s, t, driver=None):
+        """
+        Construct a regression driver object and pass it everything it needs to run. Return it as an object reference.
+        """
         regd = driver(self.kvs, self.rank, self.expression_matrix, self.meta_data, self.priors_data,
                       self.gold_standard, self.tf_names)
         self.assign_class_vars(regd)
@@ -201,6 +221,9 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
         return regd
 
     def assign_class_vars(self, obj):
+        """
+        Transfer class variables from this object to a target object
+        """
         for varname in SHARED_CLASS_VARIABLES:
             try:
                 setattr(obj, varname, getattr(self, varname))
@@ -223,16 +246,21 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
             aupr.append(rp.calculate_aupr(precision, recall))
         return aupr
 
-    def load_gene_clusters(self):
-        data = pd.DataFrame(columns=[GC, GENE])
-        for i, f in enumerate(self.gene_clust_files):
-            genes = pd.read_table(self.input_file(f), sep="\t", header=None)
-            assert genes.shape[1] == 1
-            genes.columns = [GENE]
+    def read_gene_clusters(self, file_list):
+        data = pd.DataFrame(columns=[GENE, GC])
+        for i, f in enumerate(file_list):
+            genes = self.read_gene_cluster_file(f)
+            if genes.shape[1] == 1:
+                genes.columns = [GENE]
+                genes[GC] = i
+            elif genes.shape[1] == 2:
+                genes.columns = [GENE, GC]
             genes.index = map(str, genes[GENE].tolist())
-            genes[GC] = i
             data = pd.concat((data, genes), axis=0)
-        self.gene_cluster_data = data
+        return data
+
+    def read_gene_cluster_file(self, file_name):
+        return pd.read_table(self.input_file(file_name), sep="\t", header=None)
 
     def gene_cluster_gen(self):
         for i in range(len(self.gene_clust_files)):
@@ -240,17 +268,14 @@ class InfereCLaDR_Workflow(workflow.WorkflowBase):
             yield data[GENE].tolist()
 
     def map_tau_to_genes(self, tau_data, cc):
-        tau_data = tau_data[tau_data[CC] == cc]
-        return self.gene_cluster_data.merge(tau_data[[GC, TAU]], on=GC)
+        tau_data = tau_data[tau_data[CC] == cc].copy()
+        tau_data[GC] += 1 # So the 1-indexed file works with the 0-indexed dataframe
+        data = self.gene_cluster_data.merge(tau_data[[GC, TAU]], on=GC)
+        data.index = data[GENE]
+        return data
 
     def write_df(self, df):
-        if self.output_dir is None:
-            self.output_dir = os.path.join(self.input_dir, datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-        try:
-            os.makedirs(self.output_dir)
-        except OSError:
-            pass
-        df.to_csv(os.path.join(self.output_dir, 'predicted_half-lives.tsv'), sep="\t")
+        df.to_csv(self.output_file('predicted_half-lives.tsv'), sep="\t")
 
     @staticmethod
     def process_aupr_search(data):
