@@ -28,22 +28,16 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
         Execute workflow, after all configuration.
         """
 
+        # Set the random seed (for bootstrap selection)
         np.random.seed(self.random_seed)
 
         # Call the startup workflow
         self.startup()
 
         # Run regression after startup
-        betas = []
-        rescaled_betas = []
+        betas, rescaled_betas = self.run_regression()
 
-        for idx, bootstrap in enumerate(self.get_bootstraps()):
-            utils.Debug.vprint('Bootstrap {} of {}'.format((idx + 1), self.num_bootstraps), level=0)
-            current_betas, current_rescaled_betas = self.run_bootstrap(bootstrap)
-            if self.is_master():
-                betas.append(current_betas)
-                rescaled_betas.append(current_rescaled_betas)
-
+        # Write the results out to a file
         self.emit_results(betas, rescaled_betas, self.gold_standard, self.priors_data)
 
     def startup_run(self):
@@ -54,14 +48,27 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
     def startup_finish(self):
         pass
 
+    def run_regression(self):
+        betas = []
+        rescaled_betas = []
+
+        for idx, bootstrap in enumerate(self.get_bootstraps()):
+            utils.Debug.vprint('Bootstrap {} of {}'.format((idx + 1), self.num_bootstraps), level=0)
+            current_betas, current_rescaled_betas = self.run_bootstrap(bootstrap)
+            if self.is_master():
+                betas.append(current_betas)
+                rescaled_betas.append(current_rescaled_betas)
+
+        return betas, rescaled_betas
+
     def run_bootstrap(self, bootstrap):
         X = self.design.iloc[:, bootstrap]
         Y = self.response.iloc[:, bootstrap]
         utils.Debug.vprint('Calculating MI, Background MI, and CLR Matrix', level=0)
-        (clr_matrix, mi_matrix) = mi.MIDriver(kvs=self.kvs, rank=self.rank).run(X, Y)
+        clr_matrix, mi_matrix = mi.MIDriver(kvs=self.kvs).run(X, Y)
+        mi_matrix = None
         utils.Debug.vprint('Calculating betas using BBSR', level=0)
-        ownCheck = utils.ownCheck(self.kvs, self.rank, chunk=25)
-        return bbsr_python.BBSR_runner().run(X, Y, clr_matrix, self.priors_data, self.kvs, self.rank, ownCheck)
+        return bbsr_python.BBSR_runner().run(X, Y, clr_matrix, self.priors_data, self.kvs)
 
     def compute_activity(self):
         """
@@ -91,10 +98,8 @@ class BBSR_TFA_Workflow(workflow.WorkflowBase):
         Compute common data structures like design and response matrices.
         """
         self.filter_expression_and_priors()
-        drd = design_response_translation.PythonDRDriver()
+        drd = design_response_translation.PythonDRDriver(return_half_tau=True)
         utils.Debug.vprint('Creating design and response matrix ... ')
         drd.delTmin, drd.delTmax, drd.tau = self.delTmin, self.delTmax, self.tau
-        self.design, self.response = drd.run(self.expression_matrix, self.meta_data)
-        drd.tau = self.tau / 2
-        self.design, self.half_tau_response = drd.run(self.expression_matrix, self.meta_data)
+        self.design, self.response, self.half_tau_response = drd.run(self.expression_matrix, self.meta_data)
         self.expression_matrix = None

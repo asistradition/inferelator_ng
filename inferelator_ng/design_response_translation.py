@@ -222,7 +222,8 @@ class PythonDRDriver:
         # If there are repeated conditions with different characteristics, the outcome may be unexpected
         # (The parser will just overwrite the first ones it comes to with the characteristics of the last one)
         duplicate_in_meta = self.meta_data[self.cond_col].duplicated()
-        if np.sum(duplicate_in_meta) > 0:
+        n_dup_in_meta = np.sum(duplicate_in_meta)
+        if n_dup_in_meta > 0:
             meta_dup = self.meta_data[self.cond_col][duplicate_in_meta].astype(str).tolist()
             if np.sum(np.logical_xor(self.meta_data.duplicated(), duplicate_in_meta)) > 0:
                 utils.Debug.vprint("The metadata has non-unique conditions with different characteristics:", level=0)
