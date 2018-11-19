@@ -97,12 +97,12 @@ class WorkflowBase(object):
         self.design_response_driver.delTmin = self.delTmin
         self.design_response_driver.delTmax = self.delTmax
         self.design_response_driver.tau = self.tau
-        (self.design, self.response) = self.design_response_driver.run(self.expression_matrix, self.meta_data)
+        (self.design, self.response) = self.design_response_driver().run(self.expression_matrix, self.meta_data)
 
         # compute half_tau_response
         print('Setting up TFA specific response matrix ... ')
         self.design_response_driver.tau = self.tau / 2
-        (self.design, self.half_tau_response) = self.design_response_driver.run(self.expression_matrix, self.meta_data)
+        (self.design, self.half_tau_response) = self.design_response_driver().run(self.expression_matrix, self.meta_data)
 
     def filter_expression_and_priors(self):
         """

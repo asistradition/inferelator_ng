@@ -1,22 +1,16 @@
 import unittest, os
 import pandas as pd
 import numpy as np
-from .. import mi_R
-
-my_dir = os.path.dirname(__file__)
+from inferelator_ng import mi
 
 class TestMI(unittest.TestCase):
     """
     Superclass for common methods
     """
-    cores = bins = 10
+    bins = 10
 
     def calculate_mi(self):
-        driver = mi_R.MIDriver()
-        target = driver.target_directory = os.path.join(my_dir, "artifacts")
-        if not os.path.exists(target):
-            os.makedirs(target)
-        driver.cores = self.cores
+        driver = mi.MIDriver()
         driver.bins = self.bins
         (self.clr_matrix, self.mi_matrix) = driver.run(self.x_dataframe, self.y_dataframe)
 
@@ -38,7 +32,7 @@ class Test2By2(TestMI):
         self.x_dataframe = pd.DataFrame(np.array(L))
         self.y_dataframe = pd.DataFrame(np.array(L))
         self.calculate_mi()
-        #self.print_results()
+        self.print_results()
         expected = np.array([[0, 1], [1, 0]])
         np.testing.assert_almost_equal(self.clr_matrix.as_matrix(), expected)
 

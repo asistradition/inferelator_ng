@@ -9,17 +9,17 @@ from inferelator_ng.workflow import WorkflowBase
 import inferelator_ng.design_response_translation as design_response_translation
 from inferelator_ng.tfa import TFA
 from inferelator_ng.results_processor import ResultsProcessor
-import inferelator_ng.mi_R as mi_R
+import inferelator_ng.mi as mi
 import inferelator_ng.bbsr_python as bbsr_python
 import datetime
-from kvsstcp.kvsclient import KVSClient
+from inferelator_ng import kvs_controller
 import pandas as pd
 from inferelator_ng import utils
 
 # Connect to the key value store service (its location is found via an
 # environment variable that is set when this is started vid kvsstcp.py
 # --execcmd).
-kvs = KVSClient()
+kvs = kvs_controller.KVSController()
 # Find out which process we are (assumes running under SLURM).
 rank = int(os.environ['SLURM_PROCID'])
 
@@ -31,9 +31,9 @@ class BBSR_TFA_Workflow(WorkflowBase):
         """
         np.random.seed(self.random_seed)
 
-        self.mi_clr_driver = mi_R.MIDriver()
-        self.regression_driver = bbsr_python.BBSR_runner()
-        self.design_response_driver = design_response_translation.PythonDRDriver() #this is the python switch
+        self.mi_clr_driver = mi.MIDriver
+        self.regression_driver = bbsr_python.BBSR_runner
+        self.design_response_driver = design_response_translation.PythonDRDriver #this is the python switch
         self.get_data()
         self.compute_common_data()
         self.compute_activity()
@@ -45,14 +45,11 @@ class BBSR_TFA_Workflow(WorkflowBase):
             X = self.activity.ix[:, bootstrap]
             Y = self.response.ix[:, bootstrap]
             print('Calculating MI, Background MI, and CLR Matrix')
-            if 0 == rank:
-                (self.clr_matrix, self.mi_matrix) = self.mi_clr_driver.run(X, Y)
-                kvs.put('mi %d'%idx, (self.clr_matrix, self.mi_matrix))
-            else:
-                (self.clr_matrix, self.mi_matrix) = kvs.view('mi %d'%idx)
+            clr_matrix, mi_matrix = self.mi_clr_driver(kvs=kvs).run(X, Y)
+            mi_matrix = None
             print('Calculating betas using BBSR')
             ownCheck = utils.ownCheck(kvs, rank, chunk=25)
-            current_betas,current_rescaled_betas = self.regression_driver.run(X, Y, self.clr_matrix, self.priors_data,kvs,rank, ownCheck)
+            current_betas,current_rescaled_betas = self.regression_driver().run(X, Y, clr_matrix, self.priors_data,kvs,rank, ownCheck)
             if rank: continue
             betas.append(current_betas)
             rescaled_betas.append(current_rescaled_betas)
