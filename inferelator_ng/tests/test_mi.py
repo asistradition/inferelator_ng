@@ -2,17 +2,20 @@ import unittest, os
 import pandas as pd
 import numpy as np
 from inferelator_ng import mi
+from inferelator_ng import kvs_controller
+
 
 class TestMI(unittest.TestCase):
     """
     Superclass for common methods
     """
     bins = 10
+    driver = mi.MIDriver
+    kvs = None
 
     def calculate_mi(self):
-        driver = mi.MIDriver()
-        driver.bins = self.bins
-        (self.clr_matrix, self.mi_matrix) = driver.run(self.x_dataframe, self.y_dataframe)
+        self.driver.bins = self.bins
+        (self.clr_matrix, self.mi_matrix) = self.driver(kvs=self.kvs).run(self.x_dataframe, self.y_dataframe)
 
     def print_results(self):
         print("\nx")
@@ -23,6 +26,7 @@ class TestMI(unittest.TestCase):
         print(self.mi_matrix)
         print("clr")
         print(self.clr_matrix)
+
 
 class Test2By2(TestMI):
 
@@ -42,7 +46,7 @@ class Test2By2(TestMI):
         self.x_dataframe = pd.DataFrame(np.array(L))
         self.y_dataframe = pd.DataFrame(-np.array(L))
         self.calculate_mi()
-        #self.print_results()
+        # self.print_results()
         expected = np.array([[0, 1], [1, 0]])
         np.testing.assert_almost_equal(self.clr_matrix.as_matrix(), expected)
 
@@ -52,7 +56,7 @@ class Test2By2(TestMI):
         self.x_dataframe = pd.DataFrame(np.array(L))
         self.y_dataframe = pd.DataFrame(np.pi * np.array(L))
         self.calculate_mi()
-        #self.print_results()
+        # self.print_results()
         expected = np.array([[0, 1], [1, 0]])
         np.testing.assert_almost_equal(self.clr_matrix.as_matrix(), expected)
 
@@ -72,7 +76,7 @@ class Test2By2(TestMI):
         self.x_dataframe = pd.DataFrame(np.array(L))
         self.y_dataframe = pd.DataFrame(np.array(L).transpose())
         self.calculate_mi()
-        #self.print_results()
+        # self.print_results()
         expected = np.array([[0, 1], [1, 0]])
         np.testing.assert_almost_equal(self.clr_matrix.as_matrix(), expected)
 
@@ -80,9 +84,9 @@ class Test2By2(TestMI):
         "Compute mi for identical arrays [[1, 2], [2, 4]]."
         L = [[1, 2], [3, 4]]
         self.x_dataframe = pd.DataFrame(np.array(L))
-        self.y_dataframe = pd.DataFrame(np.zeros((2,2)))
+        self.y_dataframe = pd.DataFrame(np.zeros((2, 2)))
         self.calculate_mi()
-        #self.print_results()
+        # self.print_results()
         # the entire clr matrix is NAN
         self.assertTrue(np.isnan(self.clr_matrix.as_matrix()).all())
 
@@ -90,9 +94,9 @@ class Test2By2(TestMI):
         "Compute mi for identical arrays [[1, 2], [2, 4]]."
         L = [[1, 2], [3, 4]]
         self.x_dataframe = pd.DataFrame(np.array(L))
-        self.y_dataframe = pd.DataFrame(np.ones((2,2)))
+        self.y_dataframe = pd.DataFrame(np.ones((2, 2)))
         self.calculate_mi()
-        #self.print_results()
+        # self.print_results()
         self.assertTrue(np.isnan(self.clr_matrix.as_matrix()).all())
 
 
@@ -104,7 +108,7 @@ class Test2By3(TestMI):
         self.x_dataframe = pd.DataFrame(np.array(L))
         self.y_dataframe = pd.DataFrame(np.array(L))
         self.calculate_mi()
-        #self.print_results()
+        # self.print_results()
         expected = np.array([[0, 1], [1, 0]])
         np.testing.assert_almost_equal(self.clr_matrix.as_matrix(), expected)
 
@@ -117,4 +121,12 @@ class Test2By3(TestMI):
         self.calculate_mi()
         self.print_results()
         expected = np.array([[0, 1], [1, 0]])
-        #np.testing.assert_almost_equal(self.clr_matrix.as_matrix(), expected)
+        # np.testing.assert_almost_equal(self.clr_matrix.as_matrix(), expected)
+
+
+class TestMIKVS2by2(Test2By2):
+    kvs = kvs_controller.KVSController()
+
+
+class TestMIKVS2by3(Test2By3):
+    kvs = kvs_controller.KVSController()
