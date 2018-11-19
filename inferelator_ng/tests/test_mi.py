@@ -2,8 +2,6 @@ import unittest, os
 import pandas as pd
 import numpy as np
 from inferelator_ng import mi
-from inferelator_ng import kvs_controller
-
 
 class TestMI(unittest.TestCase):
     """
@@ -122,11 +120,3 @@ class Test2By3(TestMI):
         self.print_results()
         expected = np.array([[0, 1], [1, 0]])
         # np.testing.assert_almost_equal(self.clr_matrix.as_matrix(), expected)
-
-
-class TestMIKVS2by2(Test2By2):
-    kvs = kvs_controller.KVSController()
-
-
-class TestMIKVS2by3(Test2By3):
-    kvs = kvs_controller.KVSController()
