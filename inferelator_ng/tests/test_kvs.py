@@ -25,3 +25,10 @@ class TestMIKVS2by2(Test2By2):
 
 class TestMIKVS2by3(Test2By3):
     kvs = kvs_controller.KVSController(suppress_warnings=True)
+
+    def calculate_mi(self):
+        self.driver.bins = self.bins
+        temp_dir = tempfile.mkdtemp()
+        (self.clr_matrix, self.mi_matrix) = self.driver(kvs=self.kvs, sync_in_tmp_path=temp_dir).run(self.x_dataframe,
+                                                                                                     self.y_dataframe)
+        os.rmdir(temp_dir)
