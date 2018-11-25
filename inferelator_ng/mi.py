@@ -145,7 +145,7 @@ def mi_through_dir(X, Y, bins, kvs, temp_dir, logtype=DEFAULT_LOG_TYPE, chunk=DE
 
     # Write these MI calculations to a temp file and put that filename on KVS
     temp_fd, temp_name = tempfile.mkstemp(prefix="mi", dir=temp_dir)
-    with os.fdopen(temp_fd, "w") as temp:
+    with os.fdopen(temp_fd, "wb") as temp:
         np.savetxt(temp, local_mi, delimiter="\t")
     kvs.put(PILEUP_DATA_KEY, temp_name)
 
@@ -163,7 +163,7 @@ def mi_through_dir(X, Y, bins, kvs, temp_dir, logtype=DEFAULT_LOG_TYPE, chunk=DE
 
         # Write the complete MI array to a temp file and put that filename on KVS
         final_fd, final_name = tempfile.mkstemp(prefix="mi", dir=temp_dir)
-        with os.fdopen(final_fd, "w") as temp:
+        with os.fdopen(final_fd, "wb") as temp:
             np.savetxt(temp, mi, delimiter="\t")
         kvs.put(FINAL_MI_DATA_KEY, final_name)
     # Get the complete MI array filename from KVS and read it in
