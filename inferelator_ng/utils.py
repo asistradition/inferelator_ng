@@ -194,6 +194,23 @@ class Validator(object):
 
         return True
 
+    @staticmethod
+    def index_values_unique(index, allow_none=False):
+        """
+        Check and make sure a pandas index doesn't have duplicate entries
+        :param index:
+        :param allow_none:
+        :return:
+        """
+        if allow_none and index is None:
+            return True
+        elif index is None:
+            raise ValueError("None is not an acceptable argument")
+        elif index.duplicated().sum() > 0:
+            dupes = index[index.duplicated()].tolist()
+            raise ValueError("Duplicate value(s) present in index: {dupes}".format(dupes=" ".join(dupes)))
+        else:
+            return True
 
     @staticmethod
     def arguments_not_none(args, num_none=None):
@@ -215,6 +232,7 @@ class Validator(object):
             raise ValueError("{num} arguments are not None; only {nnum} are allowed".format(num=n_not_none,
                                                                                             nnum=num_none))
         return True
+
 
 def df_from_tsv(file_like, has_index=True):
     "Read a tsv file or buffer with headers and row ids into a pandas dataframe."
